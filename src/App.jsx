@@ -1,92 +1,30 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { getPopularMovies } from "./services/tmdb"
 
-const movies = [
-  {
-    title: "The Movie Night",
-    year: "2024",
-    rating: "8.2",
-    runtime: "2h 14m",
-    description:
-      "A group of friends comes together for one unforgettable night, but choosing what to watch turns out to be harder than expected.",
-  },
-  {
-    title: "Midnight Run",
-    year: "2023",
-    rating: "7.9",
-    runtime: "1h 58m",
-    description:
-      "A thrilling journey begins when an ordinary night takes an unexpected turn.",
-  },
-  {
-    title: "The Last Summer",
-    year: "2022",
-    rating: "8.0",
-    runtime: "2h 05m",
-    description:
-      "Friends reunite for one final summer filled with memories, surprises, and new beginnings.",
-  },
-  {
-    title: "Hidden World",
-    year: "2024",
-    rating: "8.4",
-    runtime: "2h 21m",
-    description:
-      "A mysterious discovery leads a group of friends into a world they never knew existed.",
-  },
-  {
-    title: "Parallel",
-    year: "2023",
-    rating: "8.1",
-    runtime: "2h 10m",
-    description:
-      "Two strangers discover their lives may be connected in ways neither could have imagined.",
-  },
-  {
-    title: "After Hours",
-    year: "2021",
-    rating: "7.8",
-    runtime: "1h 52m",
-    description:
-      "One night. One city. One series of unexpected adventures.",
-  },
-  {
-    title: "The Journey",
-    year: "2024",
-    rating: "8.3",
-    runtime: "2h 18m",
-    description:
-      "A long-awaited trip becomes an unforgettable adventure for a group of friends.",
-  },
-  {
-    title: "Echoes",
-    year: "2022",
-    rating: "7.7",
-    runtime: "1h 49m",
-    description:
-      "A mysterious message forces a young woman to confront a forgotten part of her past.",
-  },
-  {
-    title: "Beyond Tomorrow",
-    year: "2023",
-    rating: "8.5",
-    runtime: "2h 25m",
-    description:
-      "A hopeful story about friendship, ambition, and the choices that shape our future.",
-  },
-  {
-    title: "One More Night",
-    year: "2024",
-    rating: "8.2",
-    runtime: "2h 02m",
-    description:
-      "A final night together becomes a celebration of friendship and everything that came before.",
-  },
-]
 
 function App() {
+  const [movies, setMovies] = useState([])
+  const [isLoadingMovies, setIsLoadingMovies] = useState(true)
+  const [movieError, setMovieError] = useState("")
   const [screen, setScreen] = useState("home")
   const [currentMovie, setCurrentMovie] = useState(0)
   const [votes, setVotes] = useState([])
+
+  useEffect(() => {
+    async function loadMovies() {
+      try {
+        const data = await getPopularMovies()
+        setMovies(data)
+      } catch (error) {
+        console.error(error)
+        setMovieError("Could not load movies.")
+      } finally {
+        setIsLoadingMovies(false)
+      }
+    }
+
+    loadMovies()
+  }, [])
 
   function handleVote(vote) {
     const movie = movies[currentMovie]
@@ -240,6 +178,13 @@ function App() {
   }
 
   if (screen === "voting") {
+    if (isLoadingMovies) {
+      return <div className="app">Loading movies...</div>
+    }
+
+    if (movieError) {
+      return <div className="app">{movieError}</div>
+    }
     const movie = movies[currentMovie]
 
     return (
@@ -257,20 +202,30 @@ function App() {
 
         <div className="movie-card">
           <div className="movie-poster">
-            🎬
+            {movie.poster_path ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                alt={movie.title}
+              />
+            ) : (
+              <div className="poster-placeholder">🎬</div>
+            )}
           </div>
-
           <div className="movie-info">
-            <p className="movie-year">{movie.year}</p>
+            <p className="movie-year">
+              {movie.release_date
+                ? new Date(movie.release_date).getFullYear()
+                : "Unknown year"}
+            </p>
 
             <h1>{movie.title}</h1>
 
             <div className="movie-meta">
-              ⭐ {movie.rating} &nbsp; · &nbsp; {movie.runtime}
+              ⭐ {movie.vote_average?.toFixed(1) || "N/A"}
             </div>
 
             <p className="movie-description">
-              {movie.description}
+              {movie.overview || "No description available."}
             </p>
           </div>
         </div>
